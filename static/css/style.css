@@ -132,6 +132,13 @@ a:hover { text-decoration: underline; }
     color: var(--text-muted);
 }
 
+.topbar-right span {
+    padding: 6px 10px;
+    color: rgba(36, 33, 33, 0.767);
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.2px;
+}
 
 /* ============================================================
    MAIN
