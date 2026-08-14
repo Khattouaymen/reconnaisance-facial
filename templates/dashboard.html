@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block topbar_right %}
+    <span>{{ today }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-row">
+    <div class="stat">
+        <div class="stat-label">Total employés</div>
+        <div class="stat-value">{{ stats.total }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">Présents</div>
+        <div class="stat-value green">{{ stats.presents }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">Absents</div>
+        <div class="stat-value red">{{ stats.absents }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-label">Retards</div>
+        <div class="stat-value orange">{{ stats.retards }}</div>
+    </div>
+</div>
+
+<!-- Derniers pointages -->
+<div class="panel">
+    <div class="panel-header">
+        <h3>Pointages du jour</h3>
+    </div>
+    {% if derniers_pointages %}
+        <div class="panel-body no-padding">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employé</th>
+                        <th>Département</th>
+                        <th>Entrée</th>
+                        <th>Sortie</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance, employee in derniers_pointages %}
+                    <tr>
+                        <td>{{ employee.prenom }} {{ employee.nom }}</td>
+                        <td>{{ employee.departement }}</td>
+                        <td>{{ attendance.check_in_time }}</td>
+                        <td>{{ attendance.check_out_time }}</td>
+                        <td>
+                            {% if attendance.status == 'retard' %}
+                                <span class="badge badge-retard">Retard</span>
+                            {% else %}
+                                <span class="badge badge-present">Présent</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="panel-body">
+            <div class="empty">
+                <div class="empty-title">Aucun pointage aujourd'hui</div>
+                <div class="empty-text">Les présences apparaîtront ici une fois le système opérationnel.</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

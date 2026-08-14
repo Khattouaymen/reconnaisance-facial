@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Présence{% endblock %} — SAMHA METAL</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-brand">
+            <h1>SAMHA METAL</h1>
+            <span>Gestion de Présence</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-group">
+                <div class="nav-group-label">Principal</div>
+                <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">Tableau de bord</a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Gestion</div>
+                <a href="#" class="nav-item disabled">Employés</a>
+                <a href="#" class="nav-item disabled">Pointage</a>
+            </div>
+
+            <div class="nav-group">
+                <div class="nav-group-label">Rapports</div>
+                <a href="#" class="nav-item disabled">Historique</a>
+                <a href="#" class="nav-item disabled">Export</a>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            SAMHA METAL S.A.R.L
+        </div>
+
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+        <header class="topbar">
+            <div style="display:flex;align-items:center;">
+                <button class="mobile-toggle" onclick="toggleSidebar()">&#9776;</button>
+                <h2>{% block page_title %}Tableau de bord{% endblock %}</h2>
+            </div>
+            <div class="topbar-right">
+                {% block topbar_right %}{% endblock %}
+            </div>
+        </header>
+
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+    </main>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>
