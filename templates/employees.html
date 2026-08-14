@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Employés{% endblock %}
+{% block page_title %}Gestion des Employés{% endblock %}
+
+{% block topbar_right %}
+    <a href="{{ url_for('employee_add') }}" class="btn btn-primary">+ Nouvel employé</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Barre de recherche et filtres -->
+<div class="panel">
+    <div class="panel-body" style="padding: 14px 20px;">
+        <form method="GET" action="{{ url_for('employees_list') }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <input type="text" name="q" value="{{ query }}" placeholder="Rechercher par nom, prénom ou matricule..." class="form-control" style="max-width: 320px;">
+            
+            <select name="dept" class="form-control" style="max-width: 220px;" onchange="this.form.submit()">
+                <option value="">Tous les départements</option>
+                {% for d in departements %}
+                    <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn btn-outline">Filtrer</button>
+            {% if query or selected_dept %}
+                <a href="{{ url_for('employees_list') }}" class="btn btn-outline" style="color: var(--text-muted);">Réinitialiser</a>
+            {% endif %}
+            
+            <div style="margin-left: auto; font-size: 13px; color: var(--text-muted);">
+                {{ employees|length }} employé(s) trouvé(s)
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des employés -->
+<div class="panel">
+    <div class="panel-header">
+        <h3>Liste des employés SAMHA METAL</h3>
+    </div>
+    
+    {% if employees %}
+        <div class="panel-body no-padding">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Photo</th>
+                        <th>Matricule</th>
+                        <th>Nom & Prénom</th>
+                        <th>Département</th>
+                        <th>Poste</th>
+                        <th>Visage IA</th>
+                        <th>Statut</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td>
+                            {% if emp.photo_path %}
+                                <img src="{{ url_for('uploaded_face', filename=emp.photo_path) }}" alt="{{ emp.nom_complet }}" class="avatar">
+                            {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ emp.prenom[0]|upper }}{{ emp.nom[0]|upper }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ emp.matricule }}</strong></td>
+                        <td>
+                            <a href="{{ url_for('employee_detail', id=emp.id) }}" style="font-weight: 500; color: var(--text);">
+                                {{ emp.nom_complet }}
+                            </a>
+                        </td>
+                        <td>{{ emp.departement }}</td>
+                        <td>{{ emp.poste }}</td>
+                        <td>
+                            {% if emp.face_embedding %}
+                                <span class="badge badge-present">Enregistré (512D)</span>
+                            {% else %}
+                                <span class="badge badge-absent">Manquant</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if emp.is_active %}
+                                <span class="badge badge-actif">Actif</span>
+                            {% else %}
+                                <span class="badge badge-inactif">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <a href="{{ url_for('employee_detail', id=emp.id) }}" class="btn btn-outline btn-sm">Voir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="panel-body">
+            <div class="empty">
+                <div class="empty-title">Aucun employé trouvé</div>
+                <div class="empty-text">
+                    {% if query or selected_dept %}
+                        Aucun employé ne correspond aux critères de recherche.
+                    {% else %}
+                        Commencez par ajouter le premier employé de SAMHA METAL.
+                    {% endif %}
+                </div>
+                {% if not query and not selected_dept %}
+                    <div style="margin-top: 16px;">
+                        <a href="{{ url_for('employee_add') }}" class="btn btn-primary">+ Ajouter un employé</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

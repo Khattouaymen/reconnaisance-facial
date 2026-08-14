@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Pointage Faciale{% endblock %}
+{% block page_title %}Pointage par Reconnaissance Faciale{% endblock %}
+
+{% block topbar_right %}
+    <span id="liveClock" style="font-family: monospace; font-size: 14px; font-weight: 600; color: var(--text);">--:--:--</span>
+{% endblock %}
+
+{% block content %}
+
+<div class="pointage-grid">
+    
+    <!-- Colonne Gauche : Caméra & Scanner IA -->
+    <div>
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Borne de Pointage — SAMHA METAL</h3>
+                <span class="badge badge-gray" id="scanStatusBadge">En attente</span>
+            </div>
+            <div class="panel-body">
+                
+                <!-- Zone Caméra avec Guide Facial -->
+                <div class="scanner-container" id="scannerContainer">
+                    <video id="webcamVideo" autoplay playsinline></video>
+                    <canvas id="scanCanvas" style="display: none;"></canvas>
+                    
+                    <div class="scanner-guide" id="scannerGuide"></div>
+                    
+                    <div class="scanner-indicator" id="liveIndicator" style="display: none;">
+                        <span class="dot-live"></span>
+                        <span>SCAN ACTIF</span>
+                    </div>
+                </div>
+
+                <!-- Contrôles du scanner -->
+                <div style="display: flex; gap: 10px; margin-top: 14px; justify-content: center;">
+                    <button type="button" class="btn btn-primary" id="btnToggleScan" onclick="toggleScanner()">
+                        Démarrer la borne
+                    </button>
+                </div>
+
+                <!-- Carte de retour en direct -->
+                <div class="result-card" id="resultCard" style="display: none;">
+                    <div id="resultAvatarContainer">
+                        <div class="avatar-placeholder" style="width: 48px; height: 48px; font-size: 16px;">--</div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                            <strong id="resultName" style="font-size: 14px; color: var(--text);">--</strong>
+                            <span class="badge" id="resultBadge">--</span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary);" id="resultDetails">
+                            Département &bull; Heure
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonne Droite : Pointages récents en direct -->
+    <div>
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Pointages enregistrés aujourd'hui</h3>
+                <span class="badge badge-gray" id="todayCount">{{ today_attendances|length }} pointage(s)</span>
+            </div>
+            <div class="panel-body no-padding" style="max-height: 480px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employé</th>
+                            <th>Action</th>
+                            <th>Heure</th>
+                            <th>Confiance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        {% if today_attendances %}
+                            {% for att in today_attendances %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 500;">{{ att.employee.nom_complet }}</div>
+                                    <div style="font-size: 11px; color: var(--text-muted);">{{ att.employee.departement }}</div>
+                                </td>
+                                <td>
+                                    {% if att.check_out %}
+                                        <span class="badge badge-sortie">Sortie</span>
+                                    {% elif att.status == 'retard' %}
+                                        <span class="badge badge-retard">Entrée (Retard)</span>
+                                    {% else %}
+                                        <span class="badge badge-entree">Entrée</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ att.check_out_time if att.check_out else att.check_in_time }}</strong>
+                                </td>
+                                <td>
+                                    <span style="font-family: monospace; font-size: 11px;">
+                                        {{ (att.confidence * 100)|round(0)|int }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr id="emptyRow">
+                                <td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                                    Aucun pointage enregistré aujourd'hui.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Horloge temps réel
+    function updateClock() {
+        const now = new Date();
+        const str = now.toLocaleTimeString('fr-FR');
+        document.getElementById('liveClock').innerText = str;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Gestion Caméra & Scan IA
+    let video = document.getElementById('webcamVideo');
+    let canvas = document.getElementById('scanCanvas');
+    let guide = document.getElementById('scannerGuide');
+    let liveIndicator = document.getElementById('liveIndicator');
+    let btnToggle = document.getElementById('btnToggleScan');
+    let statusBadge = document.getElementById('scanStatusBadge');
+    let resultCard = document.getElementById('resultCard');
+    let resultName = document.getElementById('resultName');
+    let resultBadge = document.getElementById('resultBadge');
+    let resultDetails = document.getElementById('resultDetails');
+    let resultAvatarContainer = document.getElementById('resultAvatarContainer');
+    let tableBody = document.getElementById('attendanceTableBody');
+    let todayCount = document.getElementById('todayCount');
+
+    let isScanning = false;
+    let scanInterval = null;
+    let stream = null;
+    let isProcessingFrame = false;
+
+    // Synthèse sonore Web Audio API (bip agréable sans fichier externe)
+    function playBeep(success = true) {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (success) {
+                // Son ascendant mélodieux pour validation
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ré5
+                osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.15); // La5
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+        } catch (e) {
+            // Ignorer si audio non autorisé
+        }
+    }
+
+    async function toggleScanner() {
+        if (!isScanning) {
+            await startScanner();
+        } else {
+            stopScanner();
+        }
+    }
+
+    async function startScanner() {
+        try {
+            statusBadge.innerText = "Démarrage caméra...";
+            statusBadge.className = "badge badge-gray";
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
+            });
+
+            video.srcObject = stream;
+            isScanning = true;
+            btnToggle.innerText = "Arrêter la borne";
+            btnToggle.className = "btn btn-danger";
+            liveIndicator.style.display = "flex";
+            statusBadge.innerText = "Borne active";
+            statusBadge.className = "badge badge-actif";
+
+            // Scanner toutes les 1200ms
+            scanInterval = setInterval(processFrame, 1200);
+
+        } catch (err) {
+            console.error("Erreur accès caméra:", err);
+            statusBadge.innerText = "Erreur caméra";
+            statusBadge.className = "badge badge-absent";
+            alert("Impossible d'accéder à la webcam : " + err.message);
+        }
+    }
+
+    function stopScanner() {
+        isScanning = false;
+        if (scanInterval) clearInterval(scanInterval);
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+        btnToggle.innerText = "Démarrer la borne";
+        btnToggle.className = "btn btn-primary";
+        liveIndicator.style.display = "none";
+        statusBadge.innerText = "Borne arrêtée";
+        statusBadge.className = "badge badge-gray";
+        guide.className = "scanner-guide";
+    }
+
+    async function processFrame() {
+        if (!isScanning || isProcessingFrame || !video.videoWidth) return;
+
+        isProcessingFrame = true;
+
+        try {
+            canvas.width = 480;
+            canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            const response = await fetch("{{ url_for('api_recognize') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: dataUrl })
+            });
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+                showSuccessResult(data);
+                playBeep(true);
+                addRowToTable(data);
+            } else if (data.status === "cooldown") {
+                showCooldownResult(data);
+            } else if (data.status === "no_face") {
+                guide.className = "scanner-guide";
+            } else {
+                guide.className = "scanner-guide";
+            }
+
+        } catch (err) {
+            console.error("Erreur traitement frame:", err);
+        } finally {
+            isProcessingFrame = false;
+        }
+    }
+
+    function showSuccessResult(data) {
+        guide.className = "scanner-guide success";
+        resultCard.style.display = "flex";
+        resultCard.className = "result-card success";
+
+        resultName.innerText = data.employee.nom;
+        
+        if (data.action === "ENTREE") {
+            resultBadge.className = "badge badge-entree";
+            resultBadge.innerText = data.status_presence === "retard" ? "Entrée (Retard)" : "Entrée validée";
+        } else {
+            resultBadge.className = "badge badge-sortie";
+            resultBadge.innerText = "Sortie validée";
+        }
+
+        resultDetails.innerText = `${data.employee.departement} • ${data.time} • Confiance : ${data.confidence}%`;
+
+        if (data.employee.photo_url) {
+            resultAvatarContainer.innerHTML = `<img src="${data.employee.photo_url}" class="avatar" style="width: 48px; height: 48px;">`;
+        } else {
+            resultAvatarContainer.innerHTML = `<div class="avatar-placeholder" style="width: 48px; height: 48px;">${data.employee.nom[0]}</div>`;
+        }
+
+        setTimeout(() => {
+            guide.className = "scanner-guide";
+        }, 3000);
+    }
+
+    function showCooldownResult(data) {
+        resultCard.style.display = "flex";
+        resultCard.className = "result-card cooldown";
+        resultName.innerText = data.employee;
+        resultBadge.className = "badge badge-gray";
+        resultBadge.innerText = "Déjà pointé";
+        resultDetails.innerText = data.message;
+    }
+
+    function addRowToTable(data) {
+        const emptyRow = document.getElementById('emptyRow');
+        if (emptyRow) emptyRow.remove();
+
+        const tr = document.createElement('tr');
+        const badgeClass = data.action === "SORTIE" ? "badge-sortie" : (data.status_presence === "retard" ? "badge-retard" : "badge-entree");
+        const badgeLabel = data.action === "SORTIE" ? "Sortie" : (data.status_presence === "retard" ? "Entrée (Retard)" : "Entrée");
+
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight: 500;">${data.employee.nom}</div>
+                <div style="font-size: 11px; color: var(--text-muted);">${data.employee.departement}</div>
+            </td>
+            <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+            <td><strong>${data.time.substring(0, 5)}</strong></td>
+            <td><span style="font-family: monospace; font-size: 11px;">${Math.round(data.confidence)}%</span></td>
+        `;
+
+        tableBody.insertBefore(tr, tableBody.firstChild);
+
+        // Mettre à jour le compteur
+        const rows = tableBody.querySelectorAll('tr').length;
+        todayCount.innerText = `${rows} pointage(s)`;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.nom_complet }}{% endblock %}
+{% block page_title %}Fiche Employé{% endblock %}
+
+{% block topbar_right %}
+    <a href="{{ url_for('employees_list') }}" class="btn btn-outline">&larr; Retour à la liste</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Fiche profil -->
+<div class="panel">
+    <div class="panel-body">
+        <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+            
+            <!-- Photo -->
+            <div>
+                {% if employee.photo_path %}
+                    <img src="{{ url_for('uploaded_face', filename=employee.photo_path) }}" alt="{{ employee.nom_complet }}" class="avatar-lg">
+                {% else %}
+                    <div class="avatar-lg-placeholder">
+                        {{ employee.prenom[0]|upper }}{{ employee.nom[0]|upper }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Informations principales -->
+            <div style="flex: 1; min-width: 250px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                    <h2 style="font-size: 18px; font-weight: 600; color: var(--text);">{{ employee.nom_complet }}</h2>
+                    {% if employee.is_active %}
+                        <span class="badge badge-actif">Actif</span>
+                    {% else %}
+                        <span class="badge badge-inactif">Inactif</span>
+                    {% endif %}
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; font-size: 13px;">
+                    <div>
+                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Matricule</div>
+                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.matricule }}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Département</div>
+                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.departement }}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Poste</div>
+                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.poste }}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Modèle IA</div>
+                        <div style="margin-top: 2px;">
+                            {% if employee.face_embedding %}
+                                <span class="badge badge-present">Embedding ArcFace (512D)</span>
+                            {% else %}
+                                <span class="badge badge-absent">Non enregistré</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions sur l'employé -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <form method="POST" action="{{ url_for('employee_toggle', id=employee.id) }}">
+                    {% if employee.is_active %}
+                        <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">Désactiver</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Activer</button>
+                    {% endif %}
+                </form>
+                
+                <form method="POST" action="{{ url_for('employee_delete', id=employee.id) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet employé et tous ses pointages ?');">
+                    <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;">Supprimer</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Historique des pointages de cet employé -->
+<div class="panel">
+    <div class="panel-header">
+        <h3>Historique des présences de {{ employee.prenom }}</h3>
+    </div>
+    {% if attendances %}
+        <div class="panel-body no-padding">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Entrée</th>
+                        <th>Sortie</th>
+                        <th>Durée</th>
+                        <th>Similarité IA</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in attendances %}
+                    <tr>
+                        <td><strong>{{ att.date.strftime('%d/%m/%Y') }}</strong></td>
+                        <td>{{ att.check_in_time }}</td>
+                        <td>{{ att.check_out_time }}</td>
+                        <td>
+                            {% if att.duration %}
+                                {{ att.duration }} h
+                            {% else %}
+                                <span style="color: var(--text-muted);">En cours...</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if att.confidence %}
+                                <span style="font-family: monospace; font-size: 12px;">{{ (att.confidence * 100)|round(1) }}%</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if att.status == 'retard' %}
+                                <span class="badge badge-retard">Retard</span>
+                            {% else %}
+                                <span class="badge badge-present">Présent</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="panel-body">
+            <div class="empty">
+                <div class="empty-title">Aucun historique de présence</div>
+                <div class="empty-text">Cet employé n'a pas encore de pointage enregistré.</div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un employé{% endblock %}
+{% block page_title %}Nouvel Employé{% endblock %}
+
+{% block topbar_right %}
+    <a href="{{ url_for('employees_list') }}" class="btn btn-outline">&larr; Retour à la liste</a>
+{% endblock %}
+
+{% block content %}
+
+<form method="POST" action="{{ url_for('employee_add') }}" enctype="multipart/form-data" id="addEmployeeForm">
+    <div class="form-grid">
+        
+        <!-- Colonne Gauche : Informations Personnelles -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>1. Informations professionnelles</h3>
+            </div>
+            <div class="panel-body">
+                
+                <div class="form-group">
+                    <label for="matricule">Matricule *</label>
+                    <input type="text" id="matricule" name="matricule" class="form-control" placeholder="Ex: SM-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="nom">Nom *</label>
+                    <input type="text" id="nom" name="nom" class="form-control" placeholder="Ex: Khattou" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prenom">Prénom *</label>
+                    <input type="text" id="prenom" name="prenom" class="form-control" placeholder="Ex: Aymen" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="departement">Département *</label>
+                    <select id="departement" name="departement" class="form-control" required>
+                        <option value="">-- Choisir un département --</option>
+                        {% for dept in departements %}
+                            <option value="{{ dept }}">{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="poste">Poste occupé *</label>
+                    <input type="text" id="poste" name="poste" class="form-control" placeholder="Ex: Ingénieur Conception / Chaudronnier" required>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Colonne Droite : Enregistrement du Visage (IA) -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>2. Enregistrement Facial (ArcFace + SCRFD)</h3>
+            </div>
+            <div class="panel-body">
+                
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                    Positionnez le visage face à la caméra avec un bon éclairage pour extraire les caractéristiques faciales.
+                </p>
+
+                <!-- Zone Caméra / Photo -->
+                <div class="camera-box" id="cameraBox">
+                    <video id="videoPreview" autoplay playsinline style="display: block;"></video>
+                    <img id="photoPreview" style="display: none;" alt="Aperçu de la capture">
+                    <canvas id="captureCanvas" style="display: none;"></canvas>
+                </div>
+
+                <!-- Boutons Caméra -->
+                <div class="camera-controls">
+                    <button type="button" class="btn btn-outline btn-sm" id="btnStartCamera" onclick="startCamera()">Démarrer Webcam</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnCapture" onclick="capturePhoto()" disabled>Prendre la photo</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="btnRetake" onclick="retakePhoto()" style="display: none;">Reprendre</button>
+                </div>
+
+                <div class="camera-status" id="cameraStatus">
+                    Webcam en attente. Cliquez sur "Démarrer Webcam" ou importez une photo ci-dessous.
+                </div>
+
+                <!-- Input caché pour envoyer la photo base64 capturée par la webcam -->
+                <input type="hidden" name="webcam_image" id="webcamImageInput">
+
+                <!-- Alternative : Upload de fichier classique -->
+                <div style="margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border);">
+                    <label style="font-size: 12px; font-weight: 500; display: block; margin-bottom: 4px;">
+                        Ou importer un fichier image :
+                    </label>
+                    <input type="file" name="photo_file" id="photoFileInput" class="form-control" accept="image/*" onchange="handleFileUpload(event)">
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Actions formulaire -->
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+        <a href="{{ url_for('employees_list') }}" class="btn btn-outline">Annuler</a>
+        <button type="submit" class="btn btn-primary" id="btnSubmit">Enregistrer l'employé</button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let video = document.getElementById('videoPreview');
+    let canvas = document.getElementById('captureCanvas');
+    let photo = document.getElementById('photoPreview');
+    let webcamInput = document.getElementById('webcamImageInput');
+    let btnStart = document.getElementById('btnStartCamera');
+    let btnCapture = document.getElementById('btnCapture');
+    let btnRetake = document.getElementById('btnRetake');
+    let statusText = document.getElementById('cameraStatus');
+    let stream = null;
+
+    async function startCamera() {
+        try {
+            statusText.innerText = "Accès à la caméra en cours...";
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" } 
+            });
+            video.srcObject = stream;
+            video.style.display = 'block';
+            photo.style.display = 'none';
+            btnStart.style.display = 'none';
+            btnCapture.disabled = false;
+            btnRetake.style.display = 'none';
+            statusText.innerText = "Webcam active. Cadrez le visage et cliquez sur 'Prendre la photo'.";
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = "Impossible d'accéder à la webcam (" + err.message + "). Vous pouvez utiliser l'importation de fichier ci-dessous.";
+        }
+    }
+
+    function capturePhoto() {
+        if (!video.videoWidth) return;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        let dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        webcamInput.value = dataUrl;
+
+        photo.src = dataUrl;
+        photo.style.display = 'block';
+        video.style.display = 'none';
+
+        btnCapture.style.display = 'none';
+        btnRetake.style.display = 'inline-flex';
+        statusText.innerText = "Photo capturée ! Le modèle IA traitera le visage lors de l'enregistrement.";
+
+        // Stop stream to save resources
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    function retakePhoto() {
+        webcamInput.value = '';
+        photo.style.display = 'none';
+        btnRetake.style.display = 'none';
+        btnCapture.style.display = 'inline-flex';
+        btnCapture.disabled = true;
+        btnStart.style.display = 'inline-flex';
+        startCamera();
+    }
+
+    function handleFileUpload(event) {
+        let file = event.target.files[0];
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                photo.src = e.target.result;
+                photo.style.display = 'block';
+                video.style.display = 'none';
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                btnStart.style.display = 'inline-flex';
+                btnCapture.style.display = 'none';
+                btnRetake.style.display = 'none';
+                statusText.innerText = "Fichier sélectionné : " + file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
+        let btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerText = 'Traitement IA & Enregistrement en cours...';
+    });
+</script>
+{% endblock %}
