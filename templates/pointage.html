@@ -1,57 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}Pointage Faciale{% endblock %}
-{% block page_title %}Pointage par Reconnaissance Faciale{% endblock %}
+{% block title %}Borne de Pointage{% endblock %}
+{% block page_title %}Borne de Pointage Faciale{% endblock %}
 
 {% block topbar_right %}
-    <span id="liveClock" style="font-family: monospace; font-size: 14px; font-weight: 600; color: var(--text);">--:--:--</span>
+    <span id="liveClock" class="font-monospace fw-bold text-dark small">--:--:--</span>
 {% endblock %}
 
 {% block content %}
 
-<div class="pointage-grid">
+<div class="row g-4">
     
     <!-- Colonne Gauche : Caméra & Scanner IA -->
-    <div>
-        <div class="panel">
-            <div class="panel-header">
-                <h3>Borne de Pointage — SAMHA METAL</h3>
-                <span class="badge badge-gray" id="scanStatusBadge">En attente</span>
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <h3 class="h6 fw-bold mb-0 text-dark">Borne de Reconnaissance IA</h3>
+                <span class="badge bg-secondary" id="scanStatusBadge">En attente</span>
             </div>
-            <div class="panel-body">
+            <div class="card-body">
                 
                 <!-- Zone Caméra avec Guide Facial -->
-                <div class="scanner-container" id="scannerContainer">
+                <div class="scanner-box mb-3" id="scannerContainer">
                     <video id="webcamVideo" autoplay playsinline></video>
                     <canvas id="scanCanvas" style="display: none;"></canvas>
                     
                     <div class="scanner-guide" id="scannerGuide"></div>
                     
-                    <div class="scanner-indicator" id="liveIndicator" style="display: none;">
+                    <div class="position-absolute top-0 start-0 m-3 px-2 py-1 bg-dark bg-opacity-75 rounded-pill d-flex align-items-center gap-2 text-white small" id="liveIndicator" style="display: none !important;">
                         <span class="dot-live"></span>
-                        <span>SCAN ACTIF</span>
+                        <span style="font-size: 0.7rem; letter-spacing: 0.5px;">SCAN ACTIF</span>
                     </div>
                 </div>
 
-                <!-- Contrôles du scanner -->
-                <div style="display: flex; gap: 10px; margin-top: 14px; justify-content: center;">
-                    <button type="button" class="btn btn-primary" id="btnToggleScan" onclick="toggleScanner()">
+                <!-- Bouton Borne -->
+                <div class="d-flex justify-content-center mb-3">
+                    <button type="button" class="btn btn-primary px-4 fw-medium" id="btnToggleScan" onclick="toggleScanner()">
                         Démarrer la borne
                     </button>
                 </div>
 
-                <!-- Carte de retour en direct -->
-                <div class="result-card" id="resultCard" style="display: none;">
-                    <div id="resultAvatarContainer">
-                        <div class="avatar-placeholder" style="width: 48px; height: 48px; font-size: 16px;">--</div>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                            <strong id="resultName" style="font-size: 14px; color: var(--text);">--</strong>
-                            <span class="badge" id="resultBadge">--</span>
+                <!-- Carte Résultat de Détection -->
+                <div class="card border shadow-sm" id="resultCard" style="display: none;">
+                    <div class="card-body p-3 d-flex align-items-center gap-3">
+                        <div id="resultAvatarContainer">
+                            <div class="avatar-placeholder avatar-sm">--</div>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-secondary);" id="resultDetails">
-                            Département &bull; Heure
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="fw-bold text-dark" id="resultName">--</span>
+                                <span class="badge" id="resultBadge">--</span>
+                            </div>
+                            <div class="small text-muted" id="resultDetails">
+                                Département &bull; Heure
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -60,17 +62,17 @@
         </div>
     </div>
 
-    <!-- Colonne Droite : Pointages récents en direct -->
-    <div>
-        <div class="panel">
-            <div class="panel-header">
-                <h3>Pointages enregistrés aujourd'hui</h3>
-                <span class="badge badge-gray" id="todayCount">{{ today_attendances|length }} pointage(s)</span>
+    <!-- Colonne Droite : Pointages du Jour -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <h3 class="h6 fw-bold mb-0 text-dark">Pointages du jour en direct</h3>
+                <span class="badge bg-light text-dark border" id="todayCount">{{ today_attendances|length }}</span>
             </div>
-            <div class="panel-body no-padding" style="max-height: 480px; overflow-y: auto;">
-                <table>
-                    <thead>
-                        <tr>
+            <div class="card-body p-0" style="max-height: 480px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr class="text-uppercase text-muted" style="font-size: 0.7rem;">
                             <th>Employé</th>
                             <th>Action</th>
                             <th>Heure</th>
@@ -82,32 +84,26 @@
                             {% for att in today_attendances %}
                             <tr>
                                 <td>
-                                    <div style="font-weight: 500;">{{ att.employee.nom_complet }}</div>
-                                    <div style="font-size: 11px; color: var(--text-muted);">{{ att.employee.departement }}</div>
+                                    <div class="fw-semibold text-dark">{{ att.employee.nom_complet }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ att.employee.departement }}</div>
                                 </td>
                                 <td>
                                     {% if att.check_out %}
-                                        <span class="badge badge-sortie">Sortie</span>
+                                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">Sortie</span>
                                     {% elif att.status == 'retard' %}
-                                        <span class="badge badge-retard">Entrée (Retard)</span>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Entrée (Retard)</span>
                                     {% else %}
-                                        <span class="badge badge-entree">Entrée</span>
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Entrée</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    <strong>{{ att.check_out_time if att.check_out else att.check_in_time }}</strong>
-                                </td>
-                                <td>
-                                    <span style="font-family: monospace; font-size: 11px;">
-                                        {{ (att.confidence * 100)|round(0)|int }}%
-                                    </span>
-                                </td>
+                                <td><strong>{{ att.check_out_time if att.check_out else att.check_in_time }}</strong></td>
+                                <td><span class="font-monospace text-muted">{{ (att.confidence * 100)|round(0)|int }}%</span></td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr id="emptyRow">
-                                <td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">
-                                    Aucun pointage enregistré aujourd'hui.
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    Aucun pointage pour l'instant.
                                 </td>
                             </tr>
                         {% endif %}
@@ -123,16 +119,13 @@
 
 {% block scripts %}
 <script>
-    // Horloge temps réel
     function updateClock() {
         const now = new Date();
-        const str = now.toLocaleTimeString('fr-FR');
-        document.getElementById('liveClock').innerText = str;
+        document.getElementById('liveClock').innerText = now.toLocaleTimeString('fr-FR');
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Gestion Caméra & Scan IA
     let video = document.getElementById('webcamVideo');
     let canvas = document.getElementById('scanCanvas');
     let guide = document.getElementById('scannerGuide');
@@ -152,7 +145,6 @@
     let stream = null;
     let isProcessingFrame = false;
 
-    // Synthèse sonore Web Audio API (bip agréable sans fichier externe)
     function playBeep(success = true) {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -162,17 +154,14 @@
             gain.connect(audioCtx.destination);
 
             if (success) {
-                // Son ascendant mélodieux pour validation
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ré5
-                osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.15); // La5
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880.00, audioCtx.currentTime + 0.15);
                 gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
                 osc.start();
                 osc.stop(audioCtx.currentTime + 0.3);
             }
-        } catch (e) {
-            // Ignorer si audio non autorisé
-        }
+        } catch (e) {}
     }
 
     async function toggleScanner() {
@@ -185,8 +174,8 @@
 
     async function startScanner() {
         try {
-            statusBadge.innerText = "Démarrage caméra...";
-            statusBadge.className = "badge badge-gray";
+            statusBadge.innerText = "Démarrage...";
+            statusBadge.className = "badge bg-secondary";
 
             stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }
@@ -195,19 +184,18 @@
             video.srcObject = stream;
             isScanning = true;
             btnToggle.innerText = "Arrêter la borne";
-            btnToggle.className = "btn btn-danger";
-            liveIndicator.style.display = "flex";
+            btnToggle.className = "btn btn-outline-danger px-4 fw-medium";
+            liveIndicator.style.setProperty('display', 'flex', 'important');
             statusBadge.innerText = "Borne active";
-            statusBadge.className = "badge badge-actif";
+            statusBadge.className = "badge bg-success";
 
-            // Scanner toutes les 1200ms
             scanInterval = setInterval(processFrame, 1200);
 
         } catch (err) {
-            console.error("Erreur accès caméra:", err);
+            console.error(err);
             statusBadge.innerText = "Erreur caméra";
-            statusBadge.className = "badge badge-absent";
-            alert("Impossible d'accéder à la webcam : " + err.message);
+            statusBadge.className = "badge bg-danger";
+            alert("Accès webcam refusé : " + err.message);
         }
     }
 
@@ -219,10 +207,10 @@
             video.srcObject = null;
         }
         btnToggle.innerText = "Démarrer la borne";
-        btnToggle.className = "btn btn-primary";
-        liveIndicator.style.display = "none";
+        btnToggle.className = "btn btn-primary px-4 fw-medium";
+        liveIndicator.style.setProperty('display', 'none', 'important');
         statusBadge.innerText = "Borne arrêtée";
-        statusBadge.className = "badge badge-gray";
+        statusBadge.className = "badge bg-secondary";
         guide.className = "scanner-guide";
     }
 
@@ -253,14 +241,12 @@
                 addRowToTable(data);
             } else if (data.status === "cooldown") {
                 showCooldownResult(data);
-            } else if (data.status === "no_face") {
-                guide.className = "scanner-guide";
             } else {
                 guide.className = "scanner-guide";
             }
 
         } catch (err) {
-            console.error("Erreur traitement frame:", err);
+            console.error("Frame process error:", err);
         } finally {
             isProcessingFrame = false;
         }
@@ -268,25 +254,25 @@
 
     function showSuccessResult(data) {
         guide.className = "scanner-guide success";
-        resultCard.style.display = "flex";
-        resultCard.className = "result-card success";
+        resultCard.style.display = "block";
+        resultCard.className = "card border border-success-subtle bg-success-subtle shadow-sm";
 
         resultName.innerText = data.employee.nom;
         
         if (data.action === "ENTREE") {
-            resultBadge.className = "badge badge-entree";
+            resultBadge.className = "badge bg-success";
             resultBadge.innerText = data.status_presence === "retard" ? "Entrée (Retard)" : "Entrée validée";
         } else {
-            resultBadge.className = "badge badge-sortie";
+            resultBadge.className = "badge bg-primary";
             resultBadge.innerText = "Sortie validée";
         }
 
-        resultDetails.innerText = `${data.employee.departement} • ${data.time} • Confiance : ${data.confidence}%`;
+        resultDetails.innerText = `${data.employee.departement} • ${data.time} • Similarité : ${data.confidence}%`;
 
         if (data.employee.photo_url) {
-            resultAvatarContainer.innerHTML = `<img src="${data.employee.photo_url}" class="avatar" style="width: 48px; height: 48px;">`;
+            resultAvatarContainer.innerHTML = `<img src="${data.employee.photo_url}" class="avatar-sm border">`;
         } else {
-            resultAvatarContainer.innerHTML = `<div class="avatar-placeholder" style="width: 48px; height: 48px;">${data.employee.nom[0]}</div>`;
+            resultAvatarContainer.innerHTML = `<div class="avatar-placeholder avatar-sm">${data.employee.nom[0]}</div>`;
         }
 
         setTimeout(() => {
@@ -295,10 +281,10 @@
     }
 
     function showCooldownResult(data) {
-        resultCard.style.display = "flex";
-        resultCard.className = "result-card cooldown";
+        resultCard.style.display = "block";
+        resultCard.className = "card border border-warning-subtle bg-warning-subtle shadow-sm";
         resultName.innerText = data.employee;
-        resultBadge.className = "badge badge-gray";
+        resultBadge.className = "badge bg-secondary";
         resultBadge.innerText = "Déjà pointé";
         resultDetails.innerText = data.message;
     }
@@ -308,24 +294,23 @@
         if (emptyRow) emptyRow.remove();
 
         const tr = document.createElement('tr');
-        const badgeClass = data.action === "SORTIE" ? "badge-sortie" : (data.status_presence === "retard" ? "badge-retard" : "badge-entree");
+        const badgeClass = data.action === "SORTIE" ? "bg-primary-subtle text-primary-emphasis border border-primary-subtle" : (data.status_presence === "retard" ? "bg-warning-subtle text-warning-emphasis border border-warning-subtle" : "bg-success-subtle text-success-emphasis border border-success-subtle");
         const badgeLabel = data.action === "SORTIE" ? "Sortie" : (data.status_presence === "retard" ? "Entrée (Retard)" : "Entrée");
 
         tr.innerHTML = `
             <td>
-                <div style="font-weight: 500;">${data.employee.nom}</div>
-                <div style="font-size: 11px; color: var(--text-muted);">${data.employee.departement}</div>
+                <div class="fw-semibold text-dark">${data.employee.nom}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">${data.employee.departement}</div>
             </td>
             <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
             <td><strong>${data.time.substring(0, 5)}</strong></td>
-            <td><span style="font-family: monospace; font-size: 11px;">${Math.round(data.confidence)}%</span></td>
+            <td><span class="font-monospace text-muted">${Math.round(data.confidence)}%</span></td>
         `;
 
         tableBody.insertBefore(tr, tableBody.firstChild);
 
-        // Mettre à jour le compteur
         const rows = tableBody.querySelectorAll('tr').length;
-        todayCount.innerText = `${rows} pointage(s)`;
+        todayCount.innerText = rows;
     }
 </script>
 {% endblock %}

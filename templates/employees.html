@@ -4,55 +4,63 @@
 {% block page_title %}Gestion des Employés{% endblock %}
 
 {% block topbar_right %}
-    <a href="{{ url_for('employee_add') }}" class="btn btn-primary">+ Nouvel employé</a>
+    <a href="{{ url_for('employee_add') }}" class="btn btn-primary btn-sm px-3 fw-medium">
+        + Nouvel employé
+    </a>
 {% endblock %}
 
 {% block content %}
 
-<!-- Barre de recherche et filtres -->
-<div class="panel">
-    <div class="panel-body" style="padding: 14px 20px;">
-        <form method="GET" action="{{ url_for('employees_list') }}" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <input type="text" name="q" value="{{ query }}" placeholder="Rechercher par nom, prénom ou matricule..." class="form-control" style="max-width: 320px;">
+<!-- Filtre & Recherche -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ url_for('employees_list') }}" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <input type="text" name="q" value="{{ query }}" placeholder="Rechercher par nom ou matricule..." class="form-control form-control-sm">
+            </div>
             
-            <select name="dept" class="form-control" style="max-width: 220px;" onchange="this.form.submit()">
-                <option value="">Tous les départements</option>
-                {% for d in departements %}
-                    <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
-                {% endfor %}
-            </select>
+            <div class="col-md-4">
+                <select name="dept" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tous les départements</option>
+                    {% for d in departements %}
+                        <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <button type="submit" class="btn btn-outline">Filtrer</button>
-            {% if query or selected_dept %}
-                <a href="{{ url_for('employees_list') }}" class="btn btn-outline" style="color: var(--text-muted);">Réinitialiser</a>
-            {% endif %}
+            <div class="col-auto">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Filtrer</button>
+                {% if query or selected_dept %}
+                    <a href="{{ url_for('employees_list') }}" class="btn btn-link btn-sm text-muted text-decoration-none">Réinitialiser</a>
+                {% endif %}
+            </div>
             
-            <div style="margin-left: auto; font-size: 13px; color: var(--text-muted);">
-                {{ employees|length }} employé(s) trouvé(s)
+            <div class="col text-end text-muted small">
+                {{ employees|length }} employé(s)
             </div>
         </form>
     </div>
 </div>
 
-<!-- Liste des employés -->
-<div class="panel">
-    <div class="panel-header">
-        <h3>Liste des employés SAMHA METAL</h3>
+<!-- Liste des Employés -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h3 class="h6 fw-bold mb-0 text-dark">Liste du personnel SAMHA METAL</h3>
     </div>
     
     {% if employees %}
-        <div class="panel-body no-padding">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 60px;">Photo</th>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr class="small text-uppercase text-muted">
+                        <th style="width: 50px;">Photo</th>
                         <th>Matricule</th>
                         <th>Nom & Prénom</th>
                         <th>Département</th>
                         <th>Poste</th>
                         <th>Visage IA</th>
                         <th>Statut</th>
-                        <th style="text-align: right;">Actions</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,37 +68,39 @@
                     <tr>
                         <td>
                             {% if emp.photo_path %}
-                                <img src="{{ url_for('uploaded_face', filename=emp.photo_path) }}" alt="{{ emp.nom_complet }}" class="avatar">
+                                <img src="{{ url_for('uploaded_face', filename=emp.photo_path) }}" alt="{{ emp.nom_complet }}" class="avatar-sm">
                             {% else %}
                                 <div class="avatar-placeholder">
                                     {{ emp.prenom[0]|upper }}{{ emp.nom[0]|upper }}
                                 </div>
                             {% endif %}
                         </td>
-                        <td><strong>{{ emp.matricule }}</strong></td>
+                        <td><span class="fw-bold">{{ emp.matricule }}</span></td>
                         <td>
-                            <a href="{{ url_for('employee_detail', id=emp.id) }}" style="font-weight: 500; color: var(--text);">
+                            <a href="{{ url_for('employee_detail', id=emp.id) }}" class="text-dark fw-semibold text-decoration-none">
                                 {{ emp.nom_complet }}
                             </a>
                         </td>
-                        <td>{{ emp.departement }}</td>
-                        <td>{{ emp.poste }}</td>
+                        <td><span class="text-muted">{{ emp.departement }}</span></td>
+                        <td><span class="text-muted">{{ emp.poste }}</span></td>
                         <td>
                             {% if emp.face_embedding %}
-                                <span class="badge badge-present">Enregistré (512D)</span>
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">512D Enregistré</span>
                             {% else %}
-                                <span class="badge badge-absent">Manquant</span>
+                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Manquant</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if emp.is_active %}
-                                <span class="badge badge-actif">Actif</span>
+                                <span class="badge bg-success">Actif</span>
                             {% else %}
-                                <span class="badge badge-inactif">Inactif</span>
+                                <span class="badge bg-secondary">Inactif</span>
                             {% endif %}
                         </td>
-                        <td style="text-align: right;">
-                            <a href="{{ url_for('employee_detail', id=emp.id) }}" class="btn btn-outline btn-sm">Voir</a>
+                        <td class="text-end">
+                            <a href="{{ url_for('employee_detail', id=emp.id) }}" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                Voir
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -98,21 +108,11 @@
             </table>
         </div>
     {% else %}
-        <div class="panel-body">
-            <div class="empty">
-                <div class="empty-title">Aucun employé trouvé</div>
-                <div class="empty-text">
-                    {% if query or selected_dept %}
-                        Aucun employé ne correspond aux critères de recherche.
-                    {% else %}
-                        Commencez par ajouter le premier employé de SAMHA METAL.
-                    {% endif %}
-                </div>
-                {% if not query and not selected_dept %}
-                    <div style="margin-top: 16px;">
-                        <a href="{{ url_for('employee_add') }}" class="btn btn-primary">+ Ajouter un employé</a>
-                    </div>
-                {% endif %}
+        <div class="card-body text-center py-5 text-muted">
+            <p class="mb-1 fw-semibold text-secondary">Aucun employé trouvé</p>
+            <small>Commencez par ajouter un nouvel employé.</small>
+            <div class="mt-3">
+                <a href="{{ url_for('employee_add') }}" class="btn btn-primary btn-sm">+ Ajouter un employé</a>
             </div>
         </div>
     {% endif %}

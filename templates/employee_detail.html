@@ -4,76 +4,76 @@
 {% block page_title %}Fiche Employé{% endblock %}
 
 {% block topbar_right %}
-    <a href="{{ url_for('employees_list') }}" class="btn btn-outline">&larr; Retour à la liste</a>
+    <a href="{{ url_for('employees_list') }}" class="btn btn-outline-secondary btn-sm">&larr; Retour à la liste</a>
 {% endblock %}
 
 {% block content %}
 
-<!-- Fiche profil -->
-<div class="panel">
-    <div class="panel-body">
-        <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+<!-- Carte Profil Employé -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex gap-4 align-items-start flex-wrap">
             
             <!-- Photo -->
             <div>
                 {% if employee.photo_path %}
-                    <img src="{{ url_for('uploaded_face', filename=employee.photo_path) }}" alt="{{ employee.nom_complet }}" class="avatar-lg">
+                    <img src="{{ url_for('uploaded_face', filename=employee.photo_path) }}" alt="{{ employee.nom_complet }}" class="avatar-lg shadow-sm border">
                 {% else %}
-                    <div class="avatar-lg-placeholder">
+                    <div class="avatar-placeholder avatar-lg shadow-sm border" style="font-size: 2rem;">
                         {{ employee.prenom[0]|upper }}{{ employee.nom[0]|upper }}
                     </div>
                 {% endif %}
             </div>
 
-            <!-- Informations principales -->
-            <div style="flex: 1; min-width: 250px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                    <h2 style="font-size: 18px; font-weight: 600; color: var(--text);">{{ employee.nom_complet }}</h2>
+            <!-- Détails -->
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h2 class="h5 fw-bold text-dark mb-0">{{ employee.nom_complet }}</h2>
                     {% if employee.is_active %}
-                        <span class="badge badge-actif">Actif</span>
+                        <span class="badge bg-success">Actif</span>
                     {% else %}
-                        <span class="badge badge-inactif">Inactif</span>
+                        <span class="badge bg-secondary">Inactif</span>
                     {% endif %}
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; font-size: 13px;">
-                    <div>
-                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Matricule</div>
-                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.matricule }}</div>
+                <div class="row g-3 mt-1 small">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Matricule</div>
+                        <div class="fw-bold text-dark">{{ employee.matricule }}</div>
                     </div>
-                    <div>
-                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Département</div>
-                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.departement }}</div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Département</div>
+                        <div class="fw-bold text-dark">{{ employee.departement }}</div>
                     </div>
-                    <div>
-                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Poste</div>
-                        <div style="font-weight: 500; margin-top: 2px;">{{ employee.poste }}</div>
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Poste</div>
+                        <div class="fw-bold text-dark">{{ employee.poste }}</div>
                     </div>
-                    <div>
-                        <div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Modèle IA</div>
-                        <div style="margin-top: 2px;">
+                    <div class="col-sm-6 col-md-3">
+                        <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Empreinte IA</div>
+                        <div>
                             {% if employee.face_embedding %}
-                                <span class="badge badge-present">Embedding ArcFace (512D)</span>
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">ArcFace (512D)</span>
                             {% else %}
-                                <span class="badge badge-absent">Non enregistré</span>
+                                <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">Non enregistré</span>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Actions sur l'employé -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Actions -->
+            <div class="d-flex flex-column gap-2">
                 <form method="POST" action="{{ url_for('employee_toggle', id=employee.id) }}">
                     {% if employee.is_active %}
-                        <button type="submit" class="btn btn-outline btn-sm" style="width: 100%;">Désactiver</button>
+                        <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Désactiver</button>
                     {% else %}
-                        <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">Activer</button>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Activer</button>
                     {% endif %}
                 </form>
                 
-                <form method="POST" action="{{ url_for('employee_delete', id=employee.id) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet employé et tous ses pointages ?');">
-                    <button type="submit" class="btn btn-danger btn-sm" style="width: 100%;">Supprimer</button>
+                <form method="POST" action="{{ url_for('employee_delete', id=employee.id) }}" onsubmit="return confirm('Supprimer définitivement cet employé ?');">
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">Supprimer</button>
                 </form>
             </div>
 
@@ -81,16 +81,16 @@
     </div>
 </div>
 
-<!-- Historique des pointages de cet employé -->
-<div class="panel">
-    <div class="panel-header">
-        <h3>Historique des présences de {{ employee.prenom }}</h3>
+<!-- Historique des Présences de l'Employé -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h3 class="h6 fw-bold mb-0 text-dark">Historique des pointages</h3>
     </div>
     {% if attendances %}
-        <div class="panel-body no-padding">
-            <table>
-                <thead>
-                    <tr>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr class="small text-uppercase text-muted">
                         <th>Date</th>
                         <th>Entrée</th>
                         <th>Sortie</th>
@@ -102,28 +102,28 @@
                 <tbody>
                     {% for att in attendances %}
                     <tr>
-                        <td><strong>{{ att.date.strftime('%d/%m/%Y') }}</strong></td>
-                        <td>{{ att.check_in_time }}</td>
-                        <td>{{ att.check_out_time }}</td>
+                        <td><span class="fw-semibold">{{ att.date.strftime('%d/%m/%Y') }}</span></td>
+                        <td><strong>{{ att.check_in_time }}</strong></td>
+                        <td><strong>{{ att.check_out_time }}</strong></td>
                         <td>
                             {% if att.duration %}
-                                {{ att.duration }} h
+                                <span class="text-muted">{{ att.duration }} h</span>
                             {% else %}
-                                <span style="color: var(--text-muted);">En cours...</span>
+                                <span class="badge bg-light text-muted border">En cours</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if att.confidence %}
-                                <span style="font-family: monospace; font-size: 12px;">{{ (att.confidence * 100)|round(1) }}%</span>
+                                <span class="font-monospace small">{{ (att.confidence * 100)|round(1) }}%</span>
                             {% else %}
                                 -
                             {% endif %}
                         </td>
                         <td>
                             {% if att.status == 'retard' %}
-                                <span class="badge badge-retard">Retard</span>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Retard</span>
                             {% else %}
-                                <span class="badge badge-present">Présent</span>
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Présent</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -132,11 +132,8 @@
             </table>
         </div>
     {% else %}
-        <div class="panel-body">
-            <div class="empty">
-                <div class="empty-title">Aucun historique de présence</div>
-                <div class="empty-text">Cet employé n'a pas encore de pointage enregistré.</div>
-            </div>
+        <div class="card-body text-center py-5 text-muted">
+            <p class="mb-0">Aucun pointage enregistré pour cet employé.</p>
         </div>
     {% endif %}
 </div>
