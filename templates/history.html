@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Historique des Présences{% endblock %}
+{% block page_title %}Historique Global des Pointages{% endblock %}
+
+{% block topbar_right %}
+    <a href="{{ url_for('export_csv', start_date=start_date, end_date=end_date, dept=selected_dept, emp_id=selected_emp_id, status=selected_status) }}" class="btn btn-outline-success btn-sm fw-medium d-flex align-items-center gap-1">
+        <span>📥</span> Exporter en CSV (Excel)
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Formulaire de Filtrage Avancé -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h3 class="h6 fw-bold mb-0 text-dark">Filtres de recherche</h3>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('history_page') }}" class="row g-3">
+            
+            <!-- Date Début -->
+            <div class="col-md-3">
+                <label for="start_date" class="form-label small fw-semibold">Date de début</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm">
+            </div>
+
+            <!-- Date Fin -->
+            <div class="col-md-3">
+                <label for="end_date" class="form-label small fw-semibold">Date de fin</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm">
+            </div>
+
+            <!-- Département -->
+            <div class="col-md-3">
+                <label for="dept" class="form-label small fw-semibold">Département</label>
+                <select id="dept" name="dept" class="form-select form-select-sm">
+                    <option value="">Tous les départements</option>
+                    {% for d in departements %}
+                        <option value="{{ d }}" {% if selected_dept == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Employé spécifique -->
+            <div class="col-md-3">
+                <label for="emp_id" class="form-label small fw-semibold">Employé</label>
+                <select id="emp_id" name="emp_id" class="form-select form-select-sm">
+                    <option value="">Tous les employés</option>
+                    {% for emp in all_employees %}
+                        <option value="{{ emp.id }}" {% if selected_emp_id == emp.id %}selected{% endif %}>
+                            {{ emp.nom_complet }} ({{ emp.matricule }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Statut & Boutons -->
+            <div class="col-md-3">
+                <label for="status" class="form-label small fw-semibold">Statut</label>
+                <select id="status" name="status" class="form-select form-select-sm">
+                    <option value="">Tous les statuts</option>
+                    <option value="present" {% if selected_status == 'present' %}selected{% endif %}>Présent (À l'heure)</option>
+                    <option value="retard" {% if selected_status == 'retard' %}selected{% endif %}>En Retard</option>
+                </select>
+            </div>
+
+            <div class="col-md-9 d-flex align-items-end justify-content-between">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm px-4 fw-medium">Filtrer les résultats</button>
+                    <a href="{{ url_for('history_page') }}" class="btn btn-outline-secondary btn-sm">Réinitialiser</a>
+                </div>
+                
+                <span class="text-muted small">
+                    {{ attendances|length }} pointage(s) trouvé(s)
+                </span>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Synthèse de la Période Filtrée -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.65rem;">Total Pointages</div>
+                <div class="h5 fw-bold text-dark mb-0">{{ attendances|length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.65rem;">Heures Cumulées</div>
+                <div class="h5 fw-bold text-primary mb-0">{{ total_hours }} h</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-body py-3">
+                <div class="text-muted small text-uppercase fw-semibold" style="font-size: 0.65rem;">Retards Constatés</div>
+                <div class="h5 fw-bold text-warning mb-0">{{ total_retards }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table de l'Historique -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+        <h3 class="h6 fw-bold mb-0 text-dark">Registres des présences</h3>
+    </div>
+    
+    {% if attendances %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr class="small text-uppercase text-muted">
+                        <th>Date</th>
+                        <th>Matricule</th>
+                        <th>Employé</th>
+                        <th>Département</th>
+                        <th>Entrée</th>
+                        <th>Sortie</th>
+                        <th>Durée</th>
+                        <th>Similarité IA</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in attendances %}
+                    <tr>
+                        <td><strong>{{ att.date.strftime('%d/%m/%Y') }}</strong></td>
+                        <td><span class="badge bg-light text-dark border">{{ att.employee.matricule }}</span></td>
+                        <td>
+                            <a href="{{ url_for('employee_detail', id=att.employee.id) }}" class="text-dark fw-semibold text-decoration-none">
+                                {{ att.employee.nom_complet }}
+                            </a>
+                        </td>
+                        <td><span class="text-muted small">{{ att.employee.departement }}</span></td>
+                        <td><strong>{{ att.check_in_time }}</strong></td>
+                        <td><strong>{{ att.check_out_time }}</strong></td>
+                        <td>
+                            {% if att.duration %}
+                                <span class="text-dark fw-medium">{{ att.duration }} h</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted border">En cours</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if att.confidence %}
+                                <span class="font-monospace small text-muted">{{ (att.confidence * 100)|round(1) }}%</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if att.status == 'retard' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Retard</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Présent</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card-body text-center py-5 text-muted">
+            <p class="mb-1 fw-semibold text-secondary">Aucun pointage trouvé pour ces critères</p>
+            <small>Modifiez la plage de dates ou les filtres ci-dessus pour afficher d'autres enregistrements.</small>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

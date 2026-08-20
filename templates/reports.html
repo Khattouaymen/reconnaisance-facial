@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Rapports & Synthèse{% endblock %}
+{% block page_title %}Rapports d'Assiduité & Synthèse{% endblock %}
+
+{% block topbar_right %}
+    <a href="{{ url_for('export_csv', period=selected_period) }}" class="btn btn-outline-success btn-sm fw-medium d-flex align-items-center gap-1">
+        <span>📥</span> Exporter le Rapport Global CSV
+    </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Sélecteur de Période -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ url_for('reports_page') }}" class="row g-2 align-items-center">
+            <div class="col-auto">
+                <span class="small fw-semibold text-muted">Période d'analyse :</span>
+            </div>
+            <div class="col-auto">
+                <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Mois en cours ({{ current_month_name }})</option>
+                    <option value="last_30" {% if selected_period == 'last_30' %}selected{% endif %}>30 derniers jours</option>
+                    <option value="all" {% if selected_period == 'all' %}selected{% endif %}>Historique complet</option>
+                </select>
+            </div>
+            <div class="col text-end text-muted small">
+                Période du <strong>{{ start_date_str }}</strong> au <strong>{{ end_date_str }}</strong>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Indicateurs Clés de Performance (KPIs) -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Volume Global d'Heures</div>
+                <div class="h3 fw-bold text-primary mb-0">{{ grand_total_hours }} h</div>
+                <small class="text-muted">Cumul de travail sur la période</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Employés Actifs Ayant Pointé</div>
+                <div class="h3 fw-bold text-success mb-0">{{ active_employees_count }}</div>
+                <small class="text-muted">Sur un total de {{ total_registered_employees }} employés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Total Retards (> 08:00)</div>
+                <div class="h3 fw-bold text-warning mb-0">{{ total_retards }}</div>
+                <small class="text-muted">Arrivées tardives constatées</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    
+    <!-- Synthèse par Département -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h3 class="h6 fw-bold mb-0 text-dark">Synthèse par Département SAMHA METAL</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr class="text-uppercase text-muted" style="font-size: 0.7rem;">
+                            <th>Département</th>
+                            <th>Effectif</th>
+                            <th>Heures Cumulées</th>
+                            <th>Retards</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in dept_summary %}
+                        <tr>
+                            <td><strong>{{ dept.name }}</strong></td>
+                            <td>{{ dept.emp_count }}</td>
+                            <td><span class="fw-semibold text-primary">{{ dept.hours }} h</span></td>
+                            <td>
+                                {% if dept.retards > 0 %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">{{ dept.retards }}</span>
+                                {% else %}
+                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rapport Détaillé par Employé -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <h3 class="h6 fw-bold mb-0 text-dark">Rapport d'Assiduité par Employé</h3>
+                <span class="badge bg-light text-dark border">{{ emp_summary|length }} employé(s)</span>
+            </div>
+            <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead class="table-light">
+                        <tr class="text-uppercase text-muted" style="font-size: 0.7rem;">
+                            <th>Employé</th>
+                            <th>Département</th>
+                            <th>Jours Présent</th>
+                            <th>Total Heures</th>
+                            <th>Retards</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if emp_summary %}
+                            {% for emp in emp_summary %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('employee_detail', id=emp.id) }}" class="text-dark fw-semibold text-decoration-none">
+                                        {{ emp.nom_complet }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.7rem;">{{ emp.matricule }}</div>
+                                </td>
+                                <td><span class="text-muted">{{ emp.departement }}</span></td>
+                                <td><strong>{{ emp.days_present }} j</strong></td>
+                                <td><span class="fw-bold text-primary">{{ emp.total_hours }} h</span></td>
+                                <td>
+                                    {% if emp.retards_count > 0 %}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">{{ emp.retards_count }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">0</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Aucune donnée pour la période sélectionnée.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -34,14 +34,35 @@
                 Borne de Pointage
             </a>
 
-            <div class="text-uppercase text-muted fw-bold px-2 mt-3 mb-1" style="font-size: 0.65rem; letter-spacing: 0.8px;">Rapports</div>
-            <a href="#" class="nav-link text-muted disabled">Historique</a>
-            <a href="#" class="nav-link text-muted disabled">Export CSV</a>
+            <div class="text-uppercase text-muted fw-bold px-2 mt-3 mb-1" style="font-size: 0.65rem; letter-spacing: 0.8px;">Rapports & Audit</div>
+            <a href="{{ url_for('history_page') }}" class="nav-link {% if request.endpoint == 'history_page' %}active{% endif %}">
+                Historique
+            </a>
+            <a href="{{ url_for('reports_page') }}" class="nav-link {% if request.endpoint == 'reports_page' %}active{% endif %}">
+                Rapports & Synthèse
+            </a>
         </nav>
 
-        <!-- Footer Sidebar -->
-        <div class="pt-3 border-top text-muted" style="font-size: 0.75rem;">
-            SAMHA METAL S.A.R.L
+        <!-- Footer Sidebar avec Statut Auth -->
+        <div class="pt-3 border-top" style="font-size: 0.75rem;">
+            {% if current_user.is_authenticated %}
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="d-block fw-bold text-dark">{{ current_user.username }}</span>
+                        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle" style="font-size: 0.65rem;">Administrateur</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm py-1 px-2" style="font-size: 0.7rem;" title="Se déconnecter">
+                        Déconnexion
+                    </a>
+                </div>
+            {% else %}
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="text-muted">SAMHA METAL</span>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 0.7rem;">
+                        Connexion
+                    </a>
+                </div>
+            {% endif %}
         </div>
     </aside>
 
